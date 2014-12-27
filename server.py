@@ -1,4 +1,5 @@
 import os
+import time
 import sys
 import optparse
 import logging
@@ -16,23 +17,24 @@ class ServerComponent():
         self._init_slaves()
 
     def _init_slaves(self):
-        self.bot_sender = ServerXMPPReceiveBot(config.BOT_SENDER_JID,
-                                               config.BOT_SENDER_PASSWD)
-        self.bot_sender.register_plugin('xep_0030') # Service Discovery
-        self.bot_sender.register_plugin('xep_0004') # Data Forms
-        self.bot_sender.register_plugin('xep_0060') # PubSub
-        self.bot_sender.register_plugin('xep_0199') # XMPP Ping
+        self.bot_receiver = ServerXMPPReceiveBot(config.BOT_RECEIVER_JID,
+                                                 config.BOT_RECEIVER_PASSWD)
+        self.bot_receiver.register_plugin('xep_0030') # Service Discovery
+        self.bot_receiver.register_plugin('xep_0004') # Data Forms
+        self.bot_receiver.register_plugin('xep_0060') # PubSub
+        self.bot_receiver.register_plugin('xep_0199') # XMPP Ping
         
-        if self.bot_sender.connect((self.url, self.port)):
-            logging.info('Bot-sender succesfully connected to server')
-            logging.info('Bot-sender is processing...')
-            self.bot_sender.process(block=False)
+        if self.bot_receiver.connect((self.url, self.port)):
+            logging.info('Bot-receiver succesfully connected to server')
+            logging.info('Bot-receiver is processing...')
+            self.bot_receiver.process(block=False)
         else:
-            logging.error('Bot-sender failed connection to server')
+            logging.error('Bot-receiver failed connection to server')
             assert False
 
     def run(self):
-        pass
+        time.sleep(20)
+        self.bot_receiver.finish()
 
 
 def parse_args():
@@ -64,16 +66,15 @@ def parse_args():
 
 if __name__ == '__main__':
     opts, args = parse_args()
-    print dir(opts)
-    logging.info('Starting server...')
     url = opts.url or ''
     port = opts.port or ''
 
     assert url, 'url needed'
     assert port, 'port needed'
 
+    logging.info('Starting server...')
     server_component = ServerComponent(url, port)
-    server_component.start()
+    server_component.run()
     logging.info('Stopping server...')
 
 

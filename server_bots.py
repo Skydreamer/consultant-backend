@@ -16,10 +16,6 @@ if sys.version_info < (3, 0):
 else:
     raw_input = input
 
-def print_attribs(obj):
-    for attr in dir(obj):
-        print attr, '->', getattr(obj, attr)
-
 def send_answers(bot, to):
     for i in range(10):
 	bot.send_message(mto=to,
@@ -34,11 +30,12 @@ class ServerXMPPBot(sleekxmpp.ClientXMPP):
         self.add_event_handler("session_start", self.start)
     
     def start(self, event):
-        loging.info('%s was started' % self.name)
-        print_attribs(event)
+        logging.info('%s was started' % self.name)
         self.send_presence()
-        print self.get_roster()
         
+    def finish(self):
+        logging.info('%s was disconnected')
+        self.disconnect(wait=True)
 
 class ServerXMPPReceiveBot(ServerXMPPBot):
     def __init__(self, jid, password):
@@ -46,7 +43,7 @@ class ServerXMPPReceiveBot(ServerXMPPBot):
         self.add_event_handler("message", self.message)
 
     def message(self, msg):
-        logging.debug('Receive message: %s' % str(msg.values()))
+        logging.debug('Receive message: %s' % str(msg.values))
     
         if msg['type'] in ('chat', 'normal'):	    
             threading.Thread(target=send_answers, args=(self, msg.getFrom())).start()

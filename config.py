@@ -1,0 +1,8 @@
+VIRTUAL_HOST = 'cons-jabber'
+
+BOT_SENDER_JID = 'server-send@' + VIRTUAL_HOST
+BOT_RECEIVER_JID = 'server-recv@' + VIRTUAL_HOST
+
+BOT_SENDER_PASSWD = '1111'
+BOT_RECEIVER_PASSWD = '1111'
+

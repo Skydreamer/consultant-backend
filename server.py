@@ -5,22 +5,27 @@ import optparse
 import logging
 from server_bots import ServerXMPPReceiveBot, ServerXMPPSendBot
 import config
+import task
+from workers import WorkerPool
+from task import Task
 
 class ServerComponent():
     def __init__(self, url, port, limits):
         self.url = url
         self.port = port
         self.bot_master = BotMaster(url, port, limits)
-        self.pool = None
+        self.pool = WorkerPool()
 
     def run(self):
         while True:
             message = unicode(raw_input())
             if message.startswith('quit'):
                 self.bot_master.disconnect()
+                self.pool.stop_pool()
                 break
             else:
-                self.bot_master.send_broadcast(message)
+                #self.bot_master.send_broadcast(message)
+                self.pool.add_task(Task(message, 'chat'))
 
 
 class BotMaster():

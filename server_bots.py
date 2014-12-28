@@ -39,10 +39,11 @@ class ServerXMPPBot(sleekxmpp.ClientXMPP):
     def session_start_handler(self, event):
         logging.info('%s was started' % self.name)
         self.send_presence()
+        self.get_roster()
         self.session_start = True
 
     def disconnect_from_server(self):
-        logging.info('%s was disconnected')
+        logging.info('%s was disconnected' % self.name)
         self.disconnect(wait=True)
 
     def send_msg(self, recipient, msg, type='chat'):

@@ -1,6 +1,5 @@
 VIRTUAL_HOST = 'cons-jabber'
 
-
 RECEIVER_BOTS = {
     'server-recv001@' + VIRTUAL_HOST : '111',
     #'server-recv004@' + VIRTUAL_HOST : '111',
@@ -20,3 +19,4 @@ SENDER_BOTS = {
 }
 
 
+QUEUE_GET_TIMEOUT = 15

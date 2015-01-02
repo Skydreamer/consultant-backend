@@ -16,16 +16,19 @@ class ServerComponent():
         self.bot_master = BotMaster(url, port, limits)
         self.pool = WorkerPool()
 
+    def stop(self):
+        logging.info('Stopping server...')
+        self.bot_master.disconnect()
+        self.pool.stop_pool()
+
     def run(self):
         while True:
             message = unicode(raw_input())
             if message.startswith('quit'):
-                self.bot_master.disconnect()
-                self.pool.stop_pool()
+                self.stop()
                 break
             else:
-                #self.bot_master.send_broadcast(message)
-                self.pool.add_task(Task(message, 'chat'))
+                self.bot_master.send_broadcast(message)
 
 
 class BotMaster():
@@ -116,7 +119,7 @@ def parse_args():
     opts, args = opt.parse_args()
 
     logging.basicConfig(level=opts.loglevel,
-                        format='%(asctime)s - %(name)s - %(levelname)-8s %(message)s')
+                        format='%(asctime)s  [P%(process)s] [T%(threadName)s] - %(name)s - %(levelname)-8s %(message)s')
     logging.info('Got args: %s' % str(opts))
 
     return (opts, args)

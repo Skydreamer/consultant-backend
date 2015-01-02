@@ -5,8 +5,9 @@ import sys
 import logging
 import getpass
 from optparse import OptionParser
-import threading
 import time
+from task import Task
+from workers import WorkerPool
 
 import sleekxmpp
 
@@ -46,30 +47,28 @@ class ServerXMPPBot(sleekxmpp.ClientXMPP):
         logging.info('%s was disconnected' % self.name)
         self.disconnect(wait=True)
 
-    def send_msg(self, recipient, msg, type='chat'):
-        logging.info('%s send to %s message: %s' % (self.name, recipient, msg))
-        self.send_message(mto=recipient, mbody=msg, mtype=type)
-
 
 class ServerXMPPReceiveBot(ServerXMPPBot):
     def __init__(self, jid, password):
         ServerXMPPBot.__init__(self, jid, password)
         self.add_event_handler("message", self.message_handler)
+        self.pool = WorkerPool()
 
     def message_handler(self, msg):
         logging.info('%s receive message: %s' % (self.name, str(msg.values)))
-        if msg['type'] in ('chat', 'normal'):	    
-            print msg.getFrom()
-            threading.Thread(target=self._send_answers, 
-                             args=(msg.getFrom(),)).start()
-
-    def _send_answers(self, to):
-        for i in range(10):
-            self.send_msg(to, unicode(i))
-            time.sleep(1)
+        msg_task = Task(msg.getFrom(), msg['body'], msg['type'])
+        self.pool.add_task(msg_task)
+        
 
 class ServerXMPPSendBot(ServerXMPPBot):
     def __init__(self, jid, password):
         ServerXMPPBot.__init__(self, jid, password)
 
+    def send_msg(self, recipient, msg, type='chat'):
+        logging.info('%s send to %s message: %s' % (self.name, recipient, msg))
+        self.send_message(mto=recipient, mbody=msg, mtype=type)
 
+    def _send_answers(self, to):
+        for i in range(10):
+            self.send_msg(to, unicode(i))
+            time.sleep(1)

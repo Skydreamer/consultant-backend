@@ -5,6 +5,13 @@ import config
 import time
 
 class WorkerPool():
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls.instance = super(WorkerPool, cls).__new__(cls)
+        return cls._instance
+
     def __init__(self):
         self.worker_number = multiprocessing.cpu_count() * 2
         self.worker_count = 0
@@ -18,6 +25,7 @@ class WorkerPool():
             worker = Worker(self.work_queue)
             self.work_pool.append(worker)
             worker.start()
+            logging.debug('Process start: %s [%s]' % (worker.name, worker.pid))
 
     def add_task(self, task):
         logging.info('Add task to pool queue: %s' % str(task))
@@ -44,9 +52,8 @@ class Worker(multiprocessing.Process):
             try:
                 logging.debug('%s is trying to get a task...' % self.name)
                 task = self.queue.get(block=True, timeout=config.QUEUE_GET_TIMEOUT)
-                logging.info('%s got task [%s], type : %s' % (self.name, 
-                                                              task.get_body(), 
-                                                              task.type))
+                logging.info('%s got task [%s]' % (self.name,
+                                                   str(task)))
                 if task.type == 'chat':
                     time.sleep(10)
 

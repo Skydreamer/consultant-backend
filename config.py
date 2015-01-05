@@ -1,3 +1,7 @@
+"""
+Config file
+"""
+
 VIRTUAL_HOST = 'cons-jabber'
 
 RECEIVER_BOTS = {
@@ -19,4 +23,7 @@ SENDER_BOTS = {
 }
 
 
-QUEUE_GET_TIMEOUT = 15
+QUEUE_GET_TIMEOUT = 5
+
+URL = '192.168.1.3'
+PORT = '5222'

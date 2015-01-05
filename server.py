@@ -6,20 +6,22 @@ import logging
 from server_bots import ServerXMPPReceiveBot, ServerXMPPSendBot
 import config
 import task
-from workers import WorkerPool
+import pool
+import controllers
 from task import Task
 
 class ServerComponent():
     def __init__(self, url, port, limits):
         self.url = url
         self.port = port
-        self.bot_master = BotMaster(url, port, limits)
-        self.pool = WorkerPool()
+        self.queue_controller = controllers.QueueController()
+        self.pool_controller = controllers.PoolController(self.queue_controller.task_handler_queue, self.queue_controller.send_message_queue)
+        self.pool_controller.start()
+        #self.bot_master = BotMaster(url, port, limits, self.queue_controller.task_handler_queue)
 
     def stop(self):
         logging.info('Stopping server...')
-        self.bot_master.disconnect()
-        self.pool.stop_pool()
+        self.pool_controller.stop()
 
     def run(self):
         while True:
@@ -27,32 +29,31 @@ class ServerComponent():
             if message.startswith('quit'):
                 self.stop()
                 break
-            else:
-                self.bot_master.send_broadcast(message)
+            elif message.startswith('stat'):
+                print self.pool_controller
+                
 
 
 class BotMaster():
-    def __init__(self, url, port, limits):
+    def __init__(self, url, port, limits, task_queue):
         self.url = url
         self.port = port
         self.receive_bot_number, self.send_bot_number = limits
-        self.send_bot_count, self.recv_bot_count = (0, 0)
         self.recv_bot_list = []
         self.send_bot_list = []
         
-        self._init_slaves()
+        self._init_slaves(task_queue)
     
-    def _init_slaves(self):
+    def _init_slaves(self, task_queue):
         logging.info('Initiate recv bots...')
         for (jid, passwd) in config.RECEIVER_BOTS.iteritems():
             logging.info('Initiate %s bot...' % jid)
-            bot_receiver = ServerXMPPReceiveBot(jid, passwd)
+            bot_receiver = ServerXMPPReceiveBot(jid, passwd, task_queue)
             bot_receiver.register_plugin('xep_0030') # Service Discovery
             bot_receiver.register_plugin('xep_0004') # Data Forms
             bot_receiver.register_plugin('xep_0060') # PubSub
             bot_receiver.register_plugin('xep_0199') # XMPP Ping
 
-            self.recv_bot_count += 1
             self.recv_bot_list.append(bot_receiver)
             
         logging.info('Initiate recv bots...')
@@ -62,7 +63,6 @@ class BotMaster():
             bot_sender.register_plugin('xep_0030') # Service Discovery
             bot_sender.register_plugin('xep_0199') # XMPP Ping
 
-            self.send_bot_count += 1
             self.send_bot_list.append(bot_sender)
 
         self.connect() 
@@ -84,6 +84,12 @@ class BotMaster():
         bot_list = self.send_bot_list + self.recv_bot_list
         for bot in bot_list:
             bot.disconnect_from_server()
+
+    def get_senders(self):
+        return self.send_bot_list
+
+    def get_receivers(self):
+        return self.recv_bot_list
 
     def send_broadcast(self, message):
         logging.info('Send message to receiver from all senders')

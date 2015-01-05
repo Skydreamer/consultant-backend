@@ -3,11 +3,9 @@
 
 import sys
 import logging
-import getpass
-from optparse import OptionParser
 import time
+import pool
 from task import Task
-from workers import WorkerPool
 
 import sleekxmpp
 
@@ -49,15 +47,15 @@ class ServerXMPPBot(sleekxmpp.ClientXMPP):
 
 
 class ServerXMPPReceiveBot(ServerXMPPBot):
-    def __init__(self, jid, password):
+    def __init__(self, jid, password, task_handler_queue):
         ServerXMPPBot.__init__(self, jid, password)
         self.add_event_handler("message", self.message_handler)
-        self.pool = WorkerPool()
+        self.task_handler_queue = task_handler_queue
 
     def message_handler(self, msg):
         logging.info('%s receive message: %s' % (self.name, str(msg.values)))
         msg_task = Task(msg.getFrom(), msg['body'], msg['type'])
-        self.pool.add_task(msg_task)
+        task_handler_queue.put(msg_task)
         
 
 class ServerXMPPSendBot(ServerXMPPBot):

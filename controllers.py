@@ -1,0 +1,45 @@
+import logging
+import multiprocessing
+import pool
+
+class PoolController(object):
+    def __init__(self, task_handler_queue, send_message_queue):
+        self.task_handler_pool = pool.TaskHandlerPool()
+        self.send_message_pool = pool.SendMessagesPool()
+        self.recv_message_pool = pool.RecvMessagesPool()
+        self.task_queue = task_handler_queue
+        self.send_queue = send_message_queue
+        self.state = False
+
+    def start(self):
+        if self.state is False:
+            logging.debug('Pool Controller - Start pools')
+            self.state = True
+            self.task_handler_pool.start(self.task_queue, self.send_queue)
+            self.send_message_pool.start(self.send_queue)
+            self.recv_message_pool.start(self.task_queue)
+            logging.debug('Pool Controller - All pools are started')
+        else:
+            logging.debug('Pools are already started')
+
+    def stop(self):
+        if self.state is True:
+            logging.debug('Pool Controller - Stop pools')
+            self.state = False
+            self.task_handler_pool.stop()
+            self.send_message_pool.stop()
+            self.recv_message_pool.stop()
+            logging.debug('Pool Controller - All pools are stopped')
+        else:
+            logging.debug('Pools are already stopped')
+
+    def __str__(self):
+        task_info = 'TaskHandlerPool:\n' + str(self.task_handler_pool.work_pool) + '\n'
+        send_info = 'SendMessagePool:\n' + str(self.send_message_pool.work_pool) + '\n'
+        recv_info = 'RecvMessagePool:\n' + str(self.recv_message_pool.work_pool) + '\n'
+        return task_info + send_info + recv_info
+
+class QueueController(object):
+    def __init__(self):
+        self.task_handler_queue = multiprocessing.Queue()
+        self.send_message_queue = multiprocessing.Queue()

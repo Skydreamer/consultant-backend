@@ -6,10 +6,11 @@ import os
 
 
 class PoolController(object):
-    def __init__(self, task_handler_queue, send_message_queue, db_controller):
+    def __init__(self, conn_params, task_handler_queue, send_message_queue, db_controller):
         self.task_handler_pool = pool.TaskHandlerPool()
         self.send_message_pool = pool.SendMessagesPool()
         self.recv_message_pool = pool.RecvMessagesPool()
+        self.conn_params = conn_params
         self.task_queue = task_handler_queue
         self.send_queue = send_message_queue
         self.db_controller = db_controller
@@ -17,12 +18,12 @@ class PoolController(object):
 
     def start(self):
         if self.state is False:
-            logging.debug('Pool Controller - Start pools')
+            logging.info('Pool Controller - Start pools')
             self.state = True
             self.task_handler_pool.start(self.task_queue, self.send_queue, self.db_controller)
-            self.send_message_pool.start(self.send_queue)
-            self.recv_message_pool.start(self.task_queue)
-            logging.debug('Pool Controller - All pools are started')
+            self.send_message_pool.start(self.conn_params, self.send_queue)
+            self.recv_message_pool.start(self.conn_params, self.task_queue)
+            logging.info('Pool Controller - All pools are started')
         else:
             logging.debug('Pools are already started')
 

@@ -12,7 +12,7 @@ class Task:
 
 
 class SendTask:
-    def __init__(self, receiver, message, type):
+    def __init__(self, receiver, message, type='chat'):
         self.receiver = receiver
         self.message = message
         self.type = type

@@ -12,7 +12,6 @@ class BasicWorker(multiprocessing.Process, object):
         super(BasicWorker, self).__init__()
         self.work = True
         self.process = multiprocessing.current_process()
-        self.name = '[%s] - #%s' % (self.process.pid, self.process.name)
 
 
 class TaskHandler(BasicWorker):
@@ -28,15 +27,16 @@ class TaskHandler(BasicWorker):
         
     def run(self):
         logging.info('Process %s is ready to work' % self.name)
+        get_timeout = config.QUEUE_GET_TIMEOUT
         while self.work:
             try:
-                logging.debug('%s is trying to get a task...' % self.name)
-                task = self.task_queue.get(block=True, timeout=config.QUEUE_GET_TIMEOUT)
+                logging.info('%s is trying to get a task...' % self.name)
+                task = self.task_queue.get(block=True, timeout=get_timeout)
                 logging.info('%s got task [%s]' % (self.name,
                                                    str(task)))
                 self.handle_task(task)
             except Empty:
-                logging.debug('%s timeouted...' % self.name)
+                logging.info('%s timeouted...' % self.name)
         logging.info('Process %s is ending...' % self.name)
 
     def handle_task(self, task):
@@ -51,14 +51,15 @@ class TaskHandler(BasicWorker):
         
 
 class BasicBotWorker(BasicWorker):
-    def __init__(self):
+    def __init__(self, jid, passwd, conn_params):
         super(BasicBotWorker, self).__init__()
         self.work_bot = None
-        self.url = config.URL
-        self.port = config.PORT
+        self.jid = jid
+        self.passwd = passwd
+        self.conn_params = conn_params
 
     def connect(self):    
-        if self.work_bot.connect((self.url, self.port)):
+        if self.work_bot.connect(self.conn_params):
             logging.info('%s succesfully connected to server' % self.work_bot.name)
         else:
             logging.error('%s failed connection to server' % self.work_bot.name)
@@ -74,10 +75,8 @@ class BasicBotWorker(BasicWorker):
 
 
 class RecvBotWorker(BasicBotWorker):
-    def __init__(self, jid, passwd, task_handler_queue):
-        super(RecvBotWorker, self).__init__()
-        self.jid = jid
-        self.passwd = passwd
+    def __init__(self, jid, passwd, conn_params, task_handler_queue):
+        super(RecvBotWorker, self).__init__(jid, passwd, conn_params)
         self.queue = task_handler_queue
 
     def init_worker(self):
@@ -96,10 +95,8 @@ class RecvBotWorker(BasicBotWorker):
 
 
 class SendBotWorker(BasicBotWorker):
-    def __init__(self, jid, passwd, send_message_queue):
-        super(SendBotWorker, self).__init__()
-        self.jid = jid
-        self.passwd = passwd
+    def __init__(self, jid, passwd, conn_params, send_message_queue):
+        super(SendBotWorker, self).__init__(jid, passwd, conn_params)
         self.queue = send_message_queue
 
     def init_worker(self):
@@ -113,12 +110,11 @@ class SendBotWorker(BasicBotWorker):
         logging.info('Process %s is ready to work' % self.name)
         while self.work:
             try:
-                logging.debug('%s is trying to get a task...' % self.name)
+                logging.info('%s is trying to get a task...' % self.name)
                 task = self.queue.get(block=True, timeout=config.QUEUE_GET_TIMEOUT)
                 logging.info('%s got task [%s]' % (self.name,
                                                    str(task)))
                 self.work_bot.send_msg(task.receiver, task.message, task.type)
-
             except Empty:
-                logging.debug('%s timeouted...' % self.name)
+                logging.info('%s timeouted...' % self.name)
         logging.info('Process %s is ending...' % self.name)

@@ -42,7 +42,6 @@ class ServerXMPPBot(sleekxmpp.ClientXMPP):
         self.session_start = True
 
     def disconnect_from_server(self):
-        logging.info('%s was disconnected' % self.name)
         self.disconnect(wait=True)
 
 
@@ -64,7 +63,7 @@ class ServerXMPPSendBot(ServerXMPPBot):
 
     def send_msg(self, recipient, msg, type='chat'):
         logging.info('%s send to %s message: %s' % (self.name, recipient, msg))
-        self.send_message(mto=recipient, mbody=msg, mtype=type)
+        self.send_message(recipient, unicode(msg), mtype=type, mfrom=self.boundjid.jid)
 
     def _send_answers(self, to):
         for i in range(10):

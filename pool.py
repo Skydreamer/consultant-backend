@@ -63,10 +63,10 @@ class TaskHandlerPool(BasicPool):
         super(TaskHandlerPool, self).__init__()
         self.name = 'TaskHandlerPool'
 
-    def start(self, task_queue, send_queue):
+    def start(self, task_queue, send_queue, db_controller):
         logging.info('Starting TaskHandlerPool with %i workers...' % self.worker_number)
         for i in range(self.worker_number):
-            worker = workers.TaskHandler(task_queue, send_queue)
+            worker = workers.TaskHandler(task_queue, send_queue, db_controller)
             worker.start()
             self.work_pool.append(worker)
             logging.debug('Process start: %s [%s]' % (worker.name, worker.pid))

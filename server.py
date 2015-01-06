@@ -8,20 +8,22 @@ import config
 import task
 import pool
 import controllers
-from task import Task
+from task import Task, SendTask
 
 class ServerComponent():
     def __init__(self, url, port, limits):
         self.url = url
         self.port = port
+        self.db_controller = controllers.DatabaseController('database.db')
         self.queue_controller = controllers.QueueController()
-        self.pool_controller = controllers.PoolController(self.queue_controller.task_handler_queue, self.queue_controller.send_message_queue)
+        self.pool_controller = controllers.PoolController(self.queue_controller.task_handler_queue, self.queue_controller.send_message_queue, self.db_controller)
         self.pool_controller.start()
         #self.bot_master = BotMaster(url, port, limits, self.queue_controller.task_handler_queue)
 
     def stop(self):
         logging.info('Stopping server...')
         self.pool_controller.stop()
+
 
     def run(self):
         while True:
@@ -31,7 +33,15 @@ class ServerComponent():
                 break
             elif message.startswith('stat'):
                 print self.pool_controller
-                
+            else:
+                m, t = message.split()
+                jid = self.pool_controller.recv_message_pool.work_pool[0]
+                print dir(jid)
+                print jid.name
+                print jid._identity
+                send_task = SendTask(jid.jid, m, t)
+                for i in range(10):
+                    self.queue_controller.send_message_queue.put(send_task)
 
 
 class BotMaster():
@@ -125,7 +135,7 @@ def parse_args():
     opts, args = opt.parse_args()
 
     logging.basicConfig(level=opts.loglevel,
-                        format='%(asctime)s  [P%(process)s] [T%(threadName)s] - %(name)s - %(levelname)-8s %(message)s')
+                        format='%(asctime)s  [P%(process)s] [T%(thread)s] - %(name)s - %(levelname)-8s %(message)s')
     logging.info('Got args: %s' % str(opts))
 
     return (opts, args)

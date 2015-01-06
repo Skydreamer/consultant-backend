@@ -27,3 +27,17 @@ QUEUE_GET_TIMEOUT = 5
 
 URL = '192.168.1.3'
 PORT = '5222'
+
+ADD_QUESTION_QUERY = """
+insert into questions (message, sender)
+values (?, ?);
+"""
+
+CREATE_TABLES = """
+create table questions (
+    id integer primary key autoincrement,
+    create_dt timestamp default current_timestamp,
+    message varchar(254) not null,
+    from varchar(60) not null
+);
+"""

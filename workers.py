@@ -16,10 +16,11 @@ class BasicWorker(multiprocessing.Process, object):
 
 
 class TaskHandler(BasicWorker):
-    def __init__(self, task_handler_queue, send_message_queue):
+    def __init__(self, task_handler_queue, send_message_queue, db_controller):
         super(TaskHandler, self).__init__()
         self.task_queue = task_handler_queue
         self.send_queue = send_message_queue
+        self.db_controller = db_controller
 
     def stop(self):
         logging.debug('Turn off')
@@ -39,12 +40,14 @@ class TaskHandler(BasicWorker):
         logging.info('Process %s is ending...' % self.name)
 
     def handle_task(self, task):
-        message = task.body['msg']
+        message = task.body
         if message == 'chat':
             time.sleep(10)
         elif message == 'get_categories':
             sendTask = SendTask(task.address, 'CATEGORY LIST', 'get_categories_answer')
             self.send_queue.put(sendTask)
+        elif message == 'question':
+            self.db_controller.add_question(message, task.address)
         
 
 class BasicBotWorker(BasicWorker):
@@ -57,8 +60,6 @@ class BasicBotWorker(BasicWorker):
     def connect(self):    
         if self.work_bot.connect((self.url, self.port)):
             logging.info('%s succesfully connected to server' % self.work_bot.name)
-            logging.info('%s is processing...' % self.work_bot.name)
-            #worker_bot.process(block=False)
         else:
             logging.error('%s failed connection to server' % self.work_bot.name)
             assert False
@@ -89,6 +90,7 @@ class RecvBotWorker(BasicBotWorker):
 
     def run(self):
         logging.info('Process %s is ready to work' % self.name)
+        logging.info('%s is processing...' % self.work_bot.name)
         self.work_bot.process(block=True)
         logging.info('Process %s is ending...' % self.name)
 
@@ -115,7 +117,7 @@ class SendBotWorker(BasicBotWorker):
                 task = self.queue.get(block=True, timeout=config.QUEUE_GET_TIMEOUT)
                 logging.info('%s got task [%s]' % (self.name,
                                                    str(task)))
-                self.sendbot.send_msg(task.receiver, task.message, task.type)
+                self.work_bot.send_msg(task.receiver, task.message, task.type)
 
             except Empty:
                 logging.debug('%s timeouted...' % self.name)

@@ -55,7 +55,7 @@ class ServerXMPPReceiveBot(ServerXMPPBot):
     def message_handler(self, msg):
         logging.info('%s receive message: %s' % (self.name, str(msg.values)))
         msg_task = Task(msg.getFrom(), msg['body'], msg['type'])
-        task_handler_queue.put(msg_task)
+        self.task_handler_queue.put(msg_task)
         
 
 class ServerXMPPSendBot(ServerXMPPBot):

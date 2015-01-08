@@ -21,7 +21,6 @@ class BasicPool(object):
         for worker in self.work_pool:
             logging.info('Stopping [%s]...' % worker.name)
             worker.stop()
-            #TODO join
             worker.terminate()
 
 

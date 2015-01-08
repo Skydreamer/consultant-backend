@@ -38,6 +38,9 @@ class PoolController(object):
         else:
             logging.debug('Pools are already stopped')
 
+    def get_state(self):
+        return str(self)
+
     def __str__(self):
         task_info = 'TaskHandlerPool:\n' + str(self.task_handler_pool.work_pool) + '\n'
         send_info = 'SendMessagePool:\n' + str(self.send_message_pool.work_pool) + '\n'

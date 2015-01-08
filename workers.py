@@ -3,9 +3,8 @@ from multiprocessing.queues import Empty
 import logging
 import config
 import time
-import server_bots
+import xmpp_bots
 from task import SendTask
-
 
 class BasicWorker(multiprocessing.Process, object):
     def __init__(self):
@@ -30,25 +29,32 @@ class TaskHandler(BasicWorker):
         get_timeout = config.QUEUE_GET_TIMEOUT
         while self.work:
             try:
-                logging.info('%s is trying to get a task...' % self.name)
+                logging.debug('%s is trying to get a task...' % self.name)
                 task = self.task_queue.get(block=True, timeout=get_timeout)
                 logging.info('%s got task [%s]' % (self.name,
                                                    str(task)))
                 self.handle_task(task)
             except Empty:
-                logging.info('%s timeouted...' % self.name)
+                logging.debug('%s timeouted...' % self.name)
         logging.info('Process %s is ending...' % self.name)
 
     def handle_task(self, task):
         message = task.body
-        if message == 'chat':
-            time.sleep(10)
-        elif message == 'get_categories':
-            sendTask = SendTask(task.address, 'CATEGORY LIST', 'get_categories_answer')
-            self.send_queue.put(sendTask)
+        send_task = None
+        if message == 'get_categories':
+            send_task = SendTask(task.address, 'CATEGORY LIST')
+        elif message == 'get_recvs':
+            send_task = SendTask(task.address, str(config.RECEIVER_BOTS.keys()))
+        elif message == 'get_sends':
+            send_task = SendTask(task.address, str(config.SENDER_BOTS.keys()))
         elif message == 'question':
-            self.db_controller.add_question(message, task.address)
-        
+            question_id = self.db_controller.add_question(message, task.address)
+            send_task = SendTask(task.address, str(question_id))
+        else:
+            time.sleep(5)
+
+        if send_task:   
+            self.send_queue.put(send_task)
 
 class BasicBotWorker(BasicWorker):
     def __init__(self, jid, passwd, conn_params):
@@ -58,20 +64,20 @@ class BasicBotWorker(BasicWorker):
         self.passwd = passwd
         self.conn_params = conn_params
 
-    def connect(self):    
+    def xmpp_connect(self):    
         if self.work_bot.connect(self.conn_params):
             logging.info('%s succesfully connected to server' % self.work_bot.name)
         else:
             logging.error('%s failed connection to server' % self.work_bot.name)
             assert False
 
-    def disconnect(self):
+    def xmpp_disconnect(self):
         logging.info('%s trying to disconnect from server...' % self.work_bot.name)
         self.work_bot.disconnect_from_server()
         
     def stop(self):
         self.work = False
-        self.disconnect()
+        self.xmpp_disconnect()
 
 
 class RecvBotWorker(BasicBotWorker):
@@ -80,14 +86,16 @@ class RecvBotWorker(BasicBotWorker):
         self.queue = task_handler_queue
 
     def init_worker(self):
-        self.work_bot = server_bots.ServerXMPPReceiveBot(self.jid, self.passwd, self.queue)
+        logging.info('Init xmpp worker')
+        self.work_bot = xmpp_bots.ServerXMPPReceiveBot(self.jid, self.passwd, self.queue)
         self.work_bot.register_plugin('xep_0030') # Service Discovery
         self.work_bot.register_plugin('xep_0004') # Data Forms
         self.work_bot.register_plugin('xep_0060') # PubSub
         self.work_bot.register_plugin('xep_0199') # XMPP Ping
-        self.connect()
+        self.xmpp_connect()
 
     def run(self):
+        self.init_worker()
         logging.info('Process %s is ready to work' % self.name)
         logging.info('%s is processing...' % self.work_bot.name)
         self.work_bot.process(block=True)
@@ -100,21 +108,24 @@ class SendBotWorker(BasicBotWorker):
         self.queue = send_message_queue
 
     def init_worker(self):
-        self.work_bot = server_bots.ServerXMPPSendBot(self.jid, self.passwd)
+        logging.info('Init xmpp worker')
+        self.work_bot = xmpp_bots.ServerXMPPSendBot(self.jid, self.passwd)
         self.work_bot.register_plugin('xep_0030') # Service Discovery
+        self.work_bot.register_plugin('xep_0004') # Data Forms
+        self.work_bot.register_plugin('xep_0060') # PubSub
         self.work_bot.register_plugin('xep_0199') # XMPP Ping
-        self.connect()
+        self.xmpp_connect()
         self.work_bot.process(block=False)
 
     def run(self):
+        self.init_worker()
         logging.info('Process %s is ready to work' % self.name)
         while self.work:
             try:
-                logging.info('%s is trying to get a task...' % self.name)
+                logging.debug('%s is trying to get a task...' % self.name)
                 task = self.queue.get(block=True, timeout=config.QUEUE_GET_TIMEOUT)
-                logging.info('%s got task [%s]' % (self.name,
-                                                   str(task)))
-                self.work_bot.send_msg(task.receiver, task.message, task.type)
+                logging.info('%s got task [%s, %s]' % (self.name, task.receiver, task.message))
+                self.work_bot.send_msg(task.receiver, task.message)
             except Empty:
-                logging.info('%s timeouted...' % self.name)
+                logging.debug('%s timeouted...' % self.name)
         logging.info('Process %s is ending...' % self.name)

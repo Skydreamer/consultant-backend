@@ -3,17 +3,17 @@ import time
 import sys
 import optparse
 import logging
-from server_bots import ServerXMPPReceiveBot, ServerXMPPSendBot
+import xmpp_bots
 import config
 import task
 import pool
 import controllers
-from task import Task, SendTask
+import random
 
 
 class ServerComponent():
     def __init__(self, url, port):
-        self.connect_params = (url, port)
+        self.connect_params = (url, int(port))
         self.db_controller = controllers.DatabaseController('database.db')
         self.queue_controller = controllers.QueueController()
         self.pool_controller = controllers.PoolController(self.connect_params, self.queue_controller.task_handler_queue, self.queue_controller.send_message_queue, self.db_controller)
@@ -22,7 +22,7 @@ class ServerComponent():
     def stop(self):
         logging.info('Stopping server...')
         self.pool_controller.stop()
-
+        logging.info('Server succesfully stopped!')
 
     def run(self):
         while True:
@@ -33,12 +33,11 @@ class ServerComponent():
             elif message.startswith('stat'):
                 print self.pool_controller
             else:
-                jid = self.pool_controller.recv_message_pool.work_pool[0].jid
-                send_task = SendTask(jid, message)
-                #send_task = SendTask('testuser@cons-jabber', message)
                 num = 10
                 logging.info('Add task to send %d messages [%s]' % (num, message))
                 for i in range(num):
+                    jid = random.choice(self.pool_controller.recv_message_pool.work_pool).jid
+                    send_task = task.SendTask(jid, message)
                     self.queue_controller.send_message_queue.put(send_task)
 
 
@@ -63,11 +62,10 @@ def parse_args():
     opt.add_option('-s', '--senders', help='set number of send bots',
                    dest='senders', default=10)
 
-    
     opts, args = opt.parse_args()
 
     logging.basicConfig(level=opts.loglevel,
-                        format='%(asctime)s  [P%(process)s] [T%(thread)s] - %(name)s - %(levelname)-8s %(message)s')
+                        format='%(asctime)s  [P%(process)s] [T%(thread)s] - %(funcName)s - %(levelname)-8s %(message)s')
     logging.info('Got args: %s' % str(opts))
 
     return (opts, args)

@@ -12,10 +12,9 @@ class Task:
 
 
 class SendTask:
-    def __init__(self, receiver, message, type='chat'):
+    def __init__(self, receiver, message):
         self.receiver = receiver
         self.message = message
-        self.type = type
 
     def __str__(self):
-        return 'Send to %s, [%s], type %s' % (self.receiver, self.message, self.type)
+        return 'Send to %s, [%s]' % (self.receiver, self.message)

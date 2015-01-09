@@ -3,12 +3,16 @@ import multiprocessing
 import pool
 import sqlite3
 import os
+import config
+
+
+HANDLER_WORK_COUNT = 16
 
 
 class PoolController(object):
     def __init__(self, conn_params, task_handler_queue, send_message_queue, db_controller):
-        self.task_handler_pool = pool.TaskHandlerPool()
-        self.send_message_pool = pool.SendMessagesPool()
+        self.task_handler_pool = pool.TaskHandlerPool(HANDLER_WORK_COUNT)
+        self.send_message_pool = pool.SendMessagesPool() 
         self.recv_message_pool = pool.RecvMessagesPool()
         self.conn_params = conn_params
         self.task_queue = task_handler_queue
@@ -39,9 +43,6 @@ class PoolController(object):
             logging.debug('Pools are already stopped')
 
     def get_state(self):
-        return str(self)
-
-    def __str__(self):
         task_info = 'TaskHandlerPool:\n' + str(self.task_handler_pool.work_pool) + '\n'
         send_info = 'SendMessagePool:\n' + str(self.send_message_pool.work_pool) + '\n'
         recv_info = 'RecvMessagePool:\n' + str(self.recv_message_pool.work_pool) + '\n'
@@ -52,6 +53,13 @@ class QueueController(object):
     def __init__(self):
         self.task_handler_queue = multiprocessing.Queue()
         self.send_message_queue = multiprocessing.Queue()
+
+    def get_state(self):
+        task_info = 'Task handler queue length = %i' % \
+                        self.task_handler_queue.qsize() + '\n'
+        send_info = 'Send handler queue length = %i' % \
+                        self.send_message_queue.qsize() + '\n'
+        return task_info + send_info
 
 
 class DatabaseController(object):
@@ -68,13 +76,11 @@ class DatabaseController(object):
 
     def add_question(self, question, sender):
         cursor = self.connection.cursor()
-        try:
-            cursor.execute(config.ADD_QUESTION_QUERY, question, sender) 
-            self.connection.commit()
-            answer_id = cursor.lastrowid
-            logging.info('Add question [%s] to the table (id:%i)' % (question, answer_id))
-        except Exception as e:
-            print e
+        cursor.execute(config.ADD_QUESTION_QUERY, (str(question), str(sender)))
+        self.connection.commit()
+        answer_id = cursor.lastrowid
+        logging.info('Add question [%s] to the table (id:%i)' % (question, answer_id))
+        return answer_id
 
     def get_categories(self):
         cursor = self.connecton.cursor()

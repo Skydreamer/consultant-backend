@@ -9,36 +9,68 @@ import task
 import pool
 import controllers
 import random
+import gc
 
 
 class ServerComponent():
-    def __init__(self, url, port):
+    def __init__(self, url, port, db_params=None):
         self.connect_params = (url, int(port))
+        self.database_params = db_params
+        self.db_controller = None 
+        self.queue_controller = None
+        self.pool_controller = None
+        self.is_started = False
+
+    def start(self):
+        logging.info('Starting server...')
         self.db_controller = controllers.DatabaseController('database.db')
         self.queue_controller = controllers.QueueController()
-        self.pool_controller = controllers.PoolController(self.connect_params, self.queue_controller.task_handler_queue, self.queue_controller.send_message_queue, self.db_controller)
+        self.pool_controller = controllers.PoolController(self.connect_params,
+                                    self.queue_controller.task_handler_queue, 
+                                    self.queue_controller.send_message_queue, 
+                                    self.db_controller)
         self.pool_controller.start()
+        self.is_started = True
+        logging.info('Server succesfully started!')
 
     def stop(self):
         logging.info('Stopping server...')
         self.pool_controller.stop()
+        self.is_started = False
         logging.info('Server succesfully stopped!')
 
     def run(self):
-        while True:
-            message = unicode(raw_input())
-            if message.startswith('quit'):
-                self.stop()
-                break
-            elif message.startswith('stat'):
-                print self.pool_controller
-            else:
-                num = 10
-                logging.info('Add task to send %d messages [%s]' % (num, message))
-                for i in range(num):
-                    jid = random.choice(self.pool_controller.recv_message_pool.work_pool).jid
-                    send_task = task.SendTask(jid, message)
-                    self.queue_controller.send_message_queue.put(send_task)
+        try:
+            while True:
+                message = unicode(raw_input())
+                if message.startswith('quit'):
+                    self.stop()
+                    break 
+                elif message.startswith('gc'):
+                    print 'Collected %d' % gc.collect()
+                elif message.startswith('stat'):
+                    print self.pool_controller.get_state()
+                    print self.queue_controller.get_state()
+                elif message.startswith('restart'):
+                    logging.info('Restarting ServerComponent...')
+                    self.stop()
+                    self.start()
+                    logging.info('Server succesfully restarted!')
+                else:
+                    message_list = message.split()
+                    if len(message_list) == 2:
+                        num = int(message_list[1])
+                        message = message_list[0]
+                    else:
+                        num = random.randint(10, 30)
+                    logging.info('Add task to send %d messages [%s]' % (num, message))
+                    for i in range(num):
+                        jid = random.choice(self.pool_controller.recv_message_pool.work_pool).jid
+                        send_task = task.SendTask(jid, message)
+                        self.queue_controller.send_message_queue.put(send_task)
+        except KeyboardInterrupt:
+            logging.info('Got KeyboardInterrupt... stopping server...')
+            self.stop()
 
 
 def parse_args():
@@ -57,17 +89,12 @@ def parse_args():
                    default='192.168.1.3')
     opt.add_option('-p', '--port', help='jabber server port',
                    default='5222')
-    opt.add_option('-r', '--recievers', help='set number of recv bots',
-                   dest='receivers', default=1)
-    opt.add_option('-s', '--senders', help='set number of send bots',
-                   dest='senders', default=10)
 
     opts, args = opt.parse_args()
 
-    logging.basicConfig(level=opts.loglevel,
-                        format='%(asctime)s  [P%(process)s] [T%(thread)s] - %(funcName)s - %(levelname)-8s %(message)s')
+    log_format = '%(asctime)s  [P%(process)s] %(levelname)-8s : %(module)s - %(message)s'
+    logging.basicConfig(level=opts.loglevel, format=log_format)
     logging.info('Got args: %s' % str(opts))
-
     return (opts, args)
     
 
@@ -75,17 +102,8 @@ if __name__ == '__main__':
     opts, args = parse_args()
     url = opts.url
     port = opts.port
-    recv_bot_number = opts.receivers
-    send_bot_number = opts.senders
-    #TODO consider with limits
-    limits = (recv_bot_number, send_bot_number)
-
     assert url, 'url needed'
     assert port, 'port needed'
-
-    logging.info('Starting server...')
     server_component = ServerComponent(url, port)
+    server_component.start()
     server_component.run()
-    logging.info('Stopping server...')
-
-

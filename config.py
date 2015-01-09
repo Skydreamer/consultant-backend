@@ -24,7 +24,6 @@ SENDER_BOTS = {
     #'server-send010@' + VIRTUAL_HOST : '111',
 }
 
-
 QUEUE_GET_TIMEOUT = 60
 
 URL = '192.168.1.3'

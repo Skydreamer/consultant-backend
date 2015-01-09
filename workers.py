@@ -19,6 +19,8 @@ class TaskHandler(BasicWorker):
         self.task_queue = task_handler_queue
         self.send_queue = send_message_queue
         self.db_controller = db_controller
+        self.start_time = None
+        self.finish_time = None
 
     def stop(self):
         logging.debug('Turn off')
@@ -56,6 +58,9 @@ class TaskHandler(BasicWorker):
         if send_task:   
             self.send_queue.put(send_task)
 
+        task.handle_time = time.time() - task.create_time
+        logging.info('Handle task [%f] seconds...' % task.handle_time)
+
 class BasicBotWorker(BasicWorker):
     def __init__(self, jid, passwd, conn_params):
         super(BasicBotWorker, self).__init__()
@@ -65,7 +70,7 @@ class BasicBotWorker(BasicWorker):
         self.conn_params = conn_params
 
     def xmpp_connect(self):    
-        if self.work_bot.connect(self.conn_params):
+        if self.work_bot.connect(self.conn_params, use_tls=False):
             logging.info('%s succesfully connected to server' % self.work_bot.name)
         else:
             logging.error('%s failed connection to server' % self.work_bot.name)

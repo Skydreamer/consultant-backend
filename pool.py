@@ -54,9 +54,10 @@ class RecvMessagesPool(BasicPool):
             logging.debug('Process start: %s [%s]' % (worker.name, worker.pid))
 
 class TaskHandlerPool(BasicPool):
-    def __init__(self):
+    def __init__(self, worker_num):
         super(TaskHandlerPool, self).__init__()
         self.name = 'TaskHandlerPool'
+        self.worker_number = worker_num
 
     def start(self, task_queue, send_queue, db_controller):
         logging.info('Starting TaskHandlerPool with %i workers...' % self.worker_number)

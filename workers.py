@@ -1,10 +1,12 @@
 import multiprocessing
 from multiprocessing.queues import Empty
 import logging
-import config
+import utils.config as config
 import time
 import xmpp_bots
 from task import SendTask
+from utils.statistics import Statistics
+
 
 class BasicWorker(multiprocessing.Process, object):
     def __init__(self):
@@ -59,6 +61,7 @@ class TaskHandler(BasicWorker):
             self.send_queue.put(send_task)
 
         task.handle_time = time.time() - task.create_time
+        Statistics.add_call(task.handle_time)
         logging.info('Handle task [%f] seconds...' % task.handle_time)
 
 class BasicBotWorker(BasicWorker):

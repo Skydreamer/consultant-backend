@@ -1,8 +1,7 @@
 import logging
 import multiprocessing
 import workers
-import config
-
+from utils import config
 
 class BasicPool(object):
     def __init__(self, work_num=None):

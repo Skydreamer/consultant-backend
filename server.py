@@ -4,7 +4,8 @@ import sys
 import optparse
 import logging
 import xmpp_bots
-import config
+from utils import config
+from utils.statistics import Statistics
 import task
 import pool
 import controllers
@@ -51,6 +52,7 @@ class ServerComponent():
                 elif message.startswith('stat'):
                     print self.pool_controller.get_state()
                     print self.queue_controller.get_state()
+                    print Statistics.avg_time() 
                 elif message.startswith('restart'):
                     logging.info('Restarting ServerComponent...')
                     self.stop()
@@ -86,9 +88,9 @@ def parse_args():
                    action='store_const', dest='loglevel',
                    const=5, default=logging.INFO)
     opt.add_option('-u', '--url', help='jabber server url', dest='url',
-                   default='192.168.1.3')
+                   default='89.189.106.3')
     opt.add_option('-p', '--port', help='jabber server port',
-                   default='5222')
+                   default='15222')
 
     opts, args = opt.parse_args()
 

@@ -3,7 +3,7 @@ import multiprocessing
 import pool
 import sqlite3
 import os
-import config
+from utils import config
 
 
 HANDLER_WORK_COUNT = 16

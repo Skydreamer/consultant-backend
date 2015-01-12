@@ -26,7 +26,7 @@ SENDER_BOTS = {
 
 QUEUE_GET_TIMEOUT = 60
 
-URL = '192.168.1.3'
+URL = 'localhost'
 PORT = '5222'
 
 ADD_QUESTION_QUERY = """

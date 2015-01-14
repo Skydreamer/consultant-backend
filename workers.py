@@ -21,6 +21,7 @@ class TaskHandler(BasicWorker):
         self.task_queue = task_handler_queue
         self.send_queue = send_message_queue
         self.db_controller = db_controller
+        self.statistics = Statistics()
         self.start_time = None
         self.finish_time = None
 
@@ -61,8 +62,9 @@ class TaskHandler(BasicWorker):
             self.send_queue.put(send_task)
 
         task.handle_time = time.time() - task.create_time
-        Statistics.add_call(task.handle_time)
+        self.statistics.add_call(task.handle_time)
         logging.info('Handle task [%f] seconds...' % task.handle_time)
+
 
 class BasicBotWorker(BasicWorker):
     def __init__(self, jid, passwd, conn_params):

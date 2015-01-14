@@ -91,11 +91,17 @@ if __name__ == '__main__':
     # If you want to verify the SSL certificates offered by a server:
     # xmpp.ca_certs = "path/to/ca/cert"
 
-    if xmpp.connect(('192.168.1.3', '5222')):
+    if xmpp.connect(('89.189.106.3', '15222')):
         xmpp.process(block=False)
         print("Done")
         while True:
-            msg = raw_input()
-            xmpp.send_message('server-recv001@cons-jabber', msg)
+            msg_list = raw_input().split()
+            if len(msg_list) == 2:
+                message, num = msg_list
+            else:
+                message = msg_list[0]
+                num = 1
+            for i in range(int(num)):
+                xmpp.send_message('server-recv001@cons-jabber', message)
     else:
         print("Unable to connect.")

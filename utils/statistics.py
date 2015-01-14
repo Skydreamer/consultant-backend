@@ -1,14 +1,22 @@
+import logging
+
+
 class Statistics:
-    req_count = 0
-    total_time = 0.0
+    _dict = {
+        'task_count' : 0,
+        'total_handler_time' : 0.0,
+    }
 
-    @classmethod
-    def add_call(cls, time):
-        print 'ADD CALL'
-        cls.req_count += 1
-        cls.total_time += time
+    def __init__(self):
+        self.__dict__ = Statistics._dict
 
-    @classmethod
-    def avg_time(cls):
-        return cls.total_time / cls.req_count
+    def add_call(self, time):
+        logging.info('Add call with %f time' % time)
+        self.task_count += 1
+        self.total_handler_time += time
 
+    def avg_time(self):
+        try:
+            return self.task_count / self.total_handler_time
+        except ZeroDivisionError:
+            return 'Stat is empty - 0.0'

@@ -17,6 +17,7 @@ class ServerComponent():
     def __init__(self, url, port, db_params=None):
         self.connect_params = (url, int(port))
         self.database_params = db_params
+        self.statistics = Statistics()
         self.db_controller = None 
         self.queue_controller = None
         self.pool_controller = None
@@ -52,7 +53,7 @@ class ServerComponent():
                 elif message.startswith('stat'):
                     print self.pool_controller.get_state()
                     print self.queue_controller.get_state()
-                    print Statistics.avg_time() 
+                    print self.statistics.avg_time()
                 elif message.startswith('restart'):
                     logging.info('Restarting ServerComponent...')
                     self.stop()

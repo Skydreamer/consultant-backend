@@ -60,27 +60,3 @@ class QueueController(object):
         send_info = 'Send handler queue length = %i' % \
                         self.send_message_queue.qsize() + '\n'
         return task_info + send_info
-
-
-class DatabaseController(object):
-    def __init__(self, filename):
-        self.filename = filename
-        self.connection = None
-        if not os.path.exists(self.filename):
-            logging.error('Need to create schema!')
-        self.connect()
-        
-    def connect(self):
-        logging.info('Trying connect to sqlite3 database...')
-        self.connection = sqlite3.connect(self.filename)
-
-    def add_question(self, question, sender):
-        cursor = self.connection.cursor()
-        cursor.execute(config.ADD_QUESTION_QUERY, (str(question), str(sender)))
-        self.connection.commit()
-        answer_id = cursor.lastrowid
-        logging.info('Add question [%s] to the table (id:%i)' % (question, answer_id))
-        return answer_id
-
-    def get_categories(self):
-        cursor = self.connecton.cursor()

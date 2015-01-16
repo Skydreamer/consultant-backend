@@ -3,7 +3,7 @@
 
 import logging
 import sleekxmpp
-
+from utils import statistics
 from task import Task
     
 
@@ -49,6 +49,18 @@ class ServerXMPPReceiveBot(ServerXMPPBot):
         logging.debug('%s receive message: %s' % (self.name, str(msg.values)))
         msg_task = Task(msg.getFrom(), msg['body'])
         self.task_handler_queue.put(msg_task)
+
+class StatXMPPReceiveBot(ServerXMPPBot):
+    '''
+    ServerXMPPReceiveBot
+    '''
+    def __init__(self, jid, password, stats):
+        super(StatXMPPReceiveBot, self).__init__(jid, password)
+        seld.add_event_handler('message', self.message_handler)
+        self.stats = statistics.Statistics() 
+
+    def message_handler(self, msg):
+        logging.debug('Got stat message: %s' % msg)
         
 
 class ServerXMPPSendBot(ServerXMPPBot):

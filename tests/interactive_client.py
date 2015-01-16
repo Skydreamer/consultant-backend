@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 import sys
 import logging
 import getpass
@@ -18,17 +17,7 @@ else:
 class EchoBot(sleekxmpp.ClientXMPP):
     def __init__(self, jid, password):
         sleekxmpp.ClientXMPP.__init__(self, jid, password)
-
-        # The session_start event will be triggered when
-        # the bot establishes its connection with the server
-        # and the XML streams are ready for use. We want to
-        # listen for this event so that we we can initialize
-        # our roster.
         self.add_event_handler("session_start", self.start)
-
-        # The message event is triggered whenever a message
-        # stanza is received. Be aware that that includes
-        # MUC messages and error messages.
         self.add_event_handler("message", self.message)
 
     def start(self, event):
@@ -62,7 +51,6 @@ if __name__ == '__main__':
                     action='store_const', dest='loglevel',
                     const=5, default=logging.INFO)
 
-    # JID and password options.
     optp.add_option("-j", "--jid", dest="jid",
                     help="JID to use")
     optp.add_option("-p", "--password", dest="password",
@@ -93,7 +81,8 @@ if __name__ == '__main__':
 
     if xmpp.connect(('89.189.106.3', '15222')):
         xmpp.process(block=False)
-        print("Done")
+        print 'Try to get receivers...'
+        xmpp.send_message('server-recv001@cons-jabber', 'get_recvs')
         while True:
             msg_list = raw_input().split()
             if len(msg_list) == 2:

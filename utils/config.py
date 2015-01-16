@@ -34,6 +34,7 @@ insert into questions (message, sender)
 values (?, ?);
 """
 
+#MOVE OUT QUERIES
 CREATE_TABLES = """
 create table questions (
     id integer primary key autoincrement,

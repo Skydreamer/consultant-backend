@@ -5,26 +5,23 @@ import sqlite3
 import os
 from utils import config
 
-
 HANDLER_WORK_COUNT = 16
 
-
 class PoolController(object):
-    def __init__(self, conn_params, task_handler_queue, send_message_queue, db_controller):
+    def __init__(self, conn_params, task_handler_queue, send_message_queue):
         self.task_handler_pool = pool.TaskHandlerPool(HANDLER_WORK_COUNT)
         self.send_message_pool = pool.SendMessagesPool() 
         self.recv_message_pool = pool.RecvMessagesPool()
         self.conn_params = conn_params
         self.task_queue = task_handler_queue
         self.send_queue = send_message_queue
-        self.db_controller = db_controller
         self.state = False
 
     def start(self):
         if self.state is False:
             logging.info('Pool Controller - Start pools')
             self.state = True
-            self.task_handler_pool.start(self.task_queue, self.send_queue, self.db_controller)
+            self.task_handler_pool.start(self.task_queue, self.send_queue)
             self.send_message_pool.start(self.conn_params, self.send_queue)
             self.recv_message_pool.start(self.conn_params, self.task_queue)
             logging.info('Pool Controller - All pools are started')

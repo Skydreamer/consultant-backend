@@ -1,37 +1,38 @@
 import multiprocessing
-from multiprocessing.queues import Empty
 import logging
-import utils.config as config
+import utils.config
 import time
 import xmpp_bots
-from task import SendTask
+import models
+import database
+
 from utils.statistics import Statistics
+from multiprocessing.queues import Empty
 
 
 class BasicWorker(multiprocessing.Process, object):
     def __init__(self):
         super(BasicWorker, self).__init__()
-        self.work = True
         self.process = multiprocessing.current_process()
+        self.work = True
 
 
 class TaskHandler(BasicWorker):
-    def __init__(self, task_handler_queue, send_message_queue, db_controller):
+    def __init__(self, task_handler_queue, send_message_queue):
         super(TaskHandler, self).__init__()
         self.task_queue = task_handler_queue
         self.send_queue = send_message_queue
-        self.db_controller = db_controller
         self.statistics = Statistics()
-        self.start_time = None
-        self.finish_time = None
 
     def stop(self):
         logging.debug('Turn off')
         self.work = False
         
     def run(self):
+        self.db_manager = database.DatabaseManager()
+        self.session = self.db_manager.get_session()
         logging.info('Process %s is ready to work' % self.name)
-        get_timeout = config.QUEUE_GET_TIMEOUT
+        get_timeout = utils.config.QUEUE_GET_TIMEOUT
         while self.work:
             try:
                 logging.debug('%s is trying to get a task...' % self.name)
@@ -43,27 +44,32 @@ class TaskHandler(BasicWorker):
                 logging.debug('%s timeouted...' % self.name)
         logging.info('Process %s is ending...' % self.name)
 
-    def handle_task(self, task):
-        message = task.body
+    def handle_task(self, work_task):
+        message = work_task.body
         send_task = None
         if message == 'get_categories':
-            send_task = SendTask(task.address, 'CATEGORY LIST')
+            send_task = models.SendTask(work_task.jid, 'CATEGORY LIST')
         elif message == 'get_recvs':
-            send_task = SendTask(task.address, str(config.RECEIVER_BOTS.keys()))
+            send_task = models.SendTask(work_task.jid, str(utils.config.RECEIVER_BOTS.keys()))
         elif message == 'get_sends':
-            send_task = SendTask(task.address, str(config.SENDER_BOTS.keys()))
+            send_task = models.SendTask(work_task.jid, str(utils.config.SENDER_BOTS.keys()))
         elif message == 'question':
-            question_id = self.db_controller.add_question(message, task.address)
-            send_task = SendTask(task.address, str(question_id))
+            question = models.Question(message, work_task.jid, 777)
+            self.session.add(question)
+            self.session.commit()
+            send_task = models.SendTask(work_task.jid, str(question.id))
         else:
-            time.sleep(5)
+            time.sleep(1)
 
+        self.session.add(work_task)
         if send_task:   
+            self.session.add(send_task)
             self.send_queue.put(send_task)
 
-        task.handle_time = time.time() - task.create_time
-        self.statistics.add_call(task.handle_time)
-        logging.info('Handle task [%f] seconds...' % task.handle_time)
+        work_task.finish()
+        self.session.commit()
+        #self.statistics.add_call(task.handle_time)
+        logging.info('Handle task [%f] seconds...' % work_task.handle_time)
 
 
 class BasicBotWorker(BasicWorker):
@@ -133,9 +139,10 @@ class SendBotWorker(BasicBotWorker):
         while self.work:
             try:
                 logging.debug('%s is trying to get a task...' % self.name)
-                task = self.queue.get(block=True, timeout=config.QUEUE_GET_TIMEOUT)
-                logging.info('%s got task [%s, %s]' % (self.name, task.receiver, task.message))
-                self.work_bot.send_msg(task.receiver, task.message)
+                task = self.queue.get(block=True, timeout=utils.config.QUEUE_GET_TIMEOUT)
+                logging.info('%s got task [%s, %s]' % (self.name, task.jid, task.body))
+                self.work_bot.send_msg(task.jid, task.body)
+                task.finish()
             except Empty:
                 logging.debug('%s timeouted...' % self.name)
         logging.info('Process %s is ending...' % self.name)

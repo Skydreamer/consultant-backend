@@ -1,11 +1,10 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 import logging
 import sleekxmpp
+
 from utils import statistics
-from task import Task
-    
+from models import WorkTask    
 
 class ServerXMPPBot(sleekxmpp.ClientXMPP):
     '''
@@ -47,8 +46,8 @@ class ServerXMPPReceiveBot(ServerXMPPBot):
 
     def message_handler(self, msg):
         logging.debug('%s receive message: %s' % (self.name, str(msg.values)))
-        msg_task = Task(msg.getFrom(), msg['body'])
-        self.task_handler_queue.put(msg_task)
+        work_task = WorkTask(msg.getFrom(), msg['body'])
+        self.task_handler_queue.put(work_task)
 
 class StatXMPPReceiveBot(ServerXMPPBot):
     '''

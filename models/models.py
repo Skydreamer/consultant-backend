@@ -28,7 +28,7 @@ class WorkTask(Base):
         self.handle_time = (self.finish_dt - self.create_dt).total_seconds()
 
     def __repr__(self):
-        return "<WorkTask('{body}', '{jid}', '{task_type}', '{create_dt}', '{finish_dt}', '{handle_time}')>".format(self.__dict__)
+        return "<WorkTask('{body:s}', '{jid:s}', '{task_type:s}', '{create_dt:s}', '{finish_dt:s}', '{handle_time:f}')>".format(self.__dict__)
 
 
 class SendTask(Base):
@@ -57,26 +57,9 @@ class SendTask(Base):
         return (self.jid, self.body)
 
     def __repr__(self):
-        return "<WorkTask('{body}', '{jid}', '{task_type}', '{create_dt}', '{finish_dt}', '{handle_time}')>".format(self.__dict__)
+        return "<WorkTask('{body:s}', '{jid:s}', '{task_type:s}', '{create_dt:s}', '{finish_dt:s}', '{handle_time:i}')>".format(self.__dict__)
  
 
-class Category(Base):
-    __tablename__ = 'categories'
-    id = Column(Integer, primary_key=True)
-    name = Column(String)
-    is_active = Column(Boolean)
-    add_dt = Column(DateTime)
- 
-    def __init__(self, name):
-        self.name = name
-        self.is_active = True
-        self.add_dt = datetime.datetime.utcnow()
-
-    def disable(self):
-        self.is_active = False
-
-    def __repr__(self):
-        return "<Category('{name:s}', '{is_active:b}', '{add_dt:s}')>".format(**self.__dict__)
 
 
 class Chat(Base):
@@ -101,6 +84,43 @@ class CallStat(Base):
         self.resource = resource
         self.call_dt = datetime.datetime.utcnow()
 
+class Category(Base):
+    __tablename__ = 'categories'
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    is_active = Column(Boolean)
+    add_dt = Column(DateTime)
+ 
+    def __init__(self, name):
+        self.name = name
+        self.is_active = True
+        self.add_dt = datetime.datetime.utcnow()
+
+    def disable(self):
+        self.is_active = False
+
+        def __repr__(self):
+        return "<Category('{name:s}', '{is_active:b}', '{add_dt:s}')>".format(**self.__dict__)
+
+class Consultant(Base):
+    __tablename__ = 'consultants'
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+
+    def __init__(self, name):
+        self.name = name
+
+
+class ConsultantCategory(Base):
+    __table__ = 'consultant_categories'
+    id = Column(Integer, primary_key=True)
+    consultant_id = Column(Integer, ForeignKey('consultants.id'))
+    category_id = Column(Integer, ForeignKey('categories.id'))
+
+    def __init__(self, cons_id, cat_id):
+        self.consultant_id = cons_id
+        self.category_id = cat_id
+        
 
 class Question(Base):
     __tablename__ = 'questions'
@@ -117,7 +137,7 @@ class Question(Base):
         self.create_dt = datetime.datetime.utcnow()
 
     def __repr__(self):
-        return "<Question('{message}', '{from_jid}', '{category_id}', '{create_dt}')>".format(self.__dict__)
+        return "<Question('{message:s}', '{from_jid:s}', '{category_id:i}', '{create_dt:s}')>".format(self.__dict__)
  
 
 _models = [WorkTask, SendTask, Question, Category, Chat, ChatMessage]

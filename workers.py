@@ -112,7 +112,8 @@ class ServerBotWorker(BasicWorker):
 
     def init_worker(self):
         logging.info('Init xmpp worker')
-        self.work_bot = xmpp_bots.ServerXMPPBot(self.jid, self.passwd, self.task_queue)
+        self.work_bot = xmpp_bots.ServerXMPPBot(self.jid, self.passwd,
+                                                self.task_queue)
         self.work_bot.register_plugin('xep_0030') # Service Discovery
         self.work_bot.register_plugin('xep_0004') # Data Forms
         self.work_bot.register_plugin('xep_0060') # PubSub

@@ -1,7 +1,5 @@
-import time
 import datetime
 import logging
-import sqlalchemy
 from sqlalchemy import Column, Integer, String, DateTime, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -30,7 +28,6 @@ class WorkTask(Base):
         self.handle_time = (self.finish_dt - self.create_dt).total_seconds()
 
     def __repr__(self):
-        return str(self.__dict__)
         return "<WorkTask('{body}', '{jid}', '{task_type}', '{create_dt}', '{finish_dt}', '{handle_time}')>".format(self.__dict__)
 
 
@@ -61,7 +58,7 @@ class SendTask(Base):
 
     def __repr__(self):
         return "<WorkTask('{body}', '{jid}', '{task_type}', '{create_dt}', '{finish_dt}', '{handle_time}')>".format(self.__dict__)
-        
+ 
 
 class Category(Base):
     __tablename__ = 'categories'
@@ -69,7 +66,7 @@ class Category(Base):
     name = Column(String)
     is_active = Column(Boolean)
     add_dt = Column(DateTime)
-        
+ 
     def __init__(self, name):
         self.name = name
         self.is_active = True
@@ -97,14 +94,14 @@ class CallStat(Base):
     id = Column(Integer, primary_key=True)
     user = Column(String)
     resource = Column(String)
-    dt = Column(DateTime)
+    call_dt = Column(DateTime)
 
     def __init__(self, user, resource):
         self.user = user
         self.resource = resource
-        self.dt = datetime.datetime.utcnow()
+        self.call_dt = datetime.datetime.utcnow()
 
- 
+
 class Question(Base):
     __tablename__ = 'questions'
     id = Column(Integer, primary_key=True)
@@ -112,7 +109,7 @@ class Question(Base):
     from_jid = Column(String)
     category_id = Column(Integer) #foreign key
     create_dt = Column(DateTime)
-        
+ 
     def __init__(self, message, from_jid, category):
         self.message = message
         self.from_jid = from_jid
@@ -121,7 +118,7 @@ class Question(Base):
 
     def __repr__(self):
         return "<Question('{message}', '{from_jid}', '{category_id}', '{create_dt}')>".format(self.__dict__)
-        
+ 
 
 _models = [WorkTask, SendTask, Question, Category, Chat, ChatMessage]
 

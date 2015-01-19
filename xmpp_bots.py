@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
-
+'''
+XMPP Bots
+'''
 import logging
 import sleekxmpp
 
-from utils import statistics
-from models import WorkTask    
+from models import WorkTask
 
 class ServerXMPPBot(sleekxmpp.ClientXMPP):
     '''
@@ -30,7 +31,7 @@ class ServerXMPPBot(sleekxmpp.ClientXMPP):
 
     def disconnect_handler(self, event):
         logging.info('[HANDLER] %s was disconnected' % self.name)
-    
+
     def connect_handler(self, event):
         logging.info('[HANDLER] %s was connected' % self.name)
 

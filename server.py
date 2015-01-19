@@ -1,3 +1,7 @@
+'''
+Server
+'''
+
 import optparse
 import logging
 import database
@@ -69,10 +73,6 @@ def parse_args():
     opt.add_option('-v', '--verbose', help='set logging to COMM',
                    action='store_const', dest='loglevel',
                    const=5, default=logging.INFO)
-    opt.add_option('-u', '--url', help='jabber server url', dest='url',
-                   default='89.189.106.3')
-    opt.add_option('-p', '--port', help='jabber server port',
-                   default='15222')
 
     opts, args = opt.parse_args()
 
@@ -84,8 +84,6 @@ def parse_args():
 
 if __name__ == '__main__':
     opts, args = parse_args()
-    url = opts.url
-    port = opts.port
     server_component = ServerComponent()
     server_component.start()
     server_component.run()

@@ -19,34 +19,20 @@ class BasicPool(object):
             worker.terminate()
 
 
-class SendMessagesPool(BasicPool):
+class ServerBotPool(BasicPool):
     def __init__(self):
-        super(SendMessagesPool, self).__init__()
-        self.name = 'SendMessagesPool'
+        super(ServerBotPool, self).__init__(len(config.RECEIVER_BOTS.keys()))
+        self.name = 'ServerBotPool'
         
-    def start(self, conn_params, queue):
-        logging.info('Starting SendMessagePool with %i workers...' % self.worker_number)
-        for (jid, passwd) in config.SENDER_BOTS.iteritems():
-            worker = workers.SendBotWorker(jid, passwd, conn_params, queue)
-            worker.init_worker()
-            worker.start()
-            self.work_pool.append(worker)
-            logging.debug('Process start: %s [%s]' % (worker.name, worker.pid))
-        
-
-class RecvMessagesPool(BasicPool):
-    def __init__(self):
-        super(RecvMessagesPool, self).__init__()
-        self.name = 'RecvMessagesPool'
-        
-    def start(self, conn_params, queue):
-        logging.info('Starting RecvMessagePool with %i workers...' % self.worker_number)
+    def start(self, task_queue, send_queue):
+        logging.info('Starting ServerBotPool with %i workers...' % self.worker_number)
         for (jid, passwd) in config.RECEIVER_BOTS.iteritems():
-            worker = workers.RecvBotWorker(jid, passwd, conn_params, queue)
+            worker = workers.ServerBotWorker(jid, passwd, task_queue, send_queue)
             worker.init_worker()
             worker.start()
             self.work_pool.append(worker)
             logging.debug('Process start: %s [%s]' % (worker.name, worker.pid))
+
 
 class TaskHandlerPool(BasicPool):
     def __init__(self, worker_num):

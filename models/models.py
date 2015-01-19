@@ -8,7 +8,7 @@ from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
 class WorkTask(Base):
-    __tablename__ = 'tasks'
+    __tablename__ = 'work_tasks'
     id = Column(Integer, primary_key=True)
     body = Column(String)
     jid = Column(String)
@@ -22,6 +22,8 @@ class WorkTask(Base):
         self.jid = str(sender)
         self.task_type = 'work_task'
         self.create_dt = datetime.datetime.utcnow()
+        self.finish_dt = None
+        self.handle_time = None
 
     def finish(self):
         self.finish_dt = datetime.datetime.utcnow()
@@ -33,8 +35,7 @@ class WorkTask(Base):
 
 
 class SendTask(Base):
-    __tablename__ = 'tasks'
-    __table_args__ = {'extend_existing' : True}
+    __tablename__ = 'send_tasks'
     id = Column(Integer, primary_key=True)
     body = Column(String)
     jid = Column(String)
@@ -48,10 +49,15 @@ class SendTask(Base):
         self.jid = str(receiver)
         self.task_type = 'send_task'
         self.create_dt = datetime.datetime.utcnow()
+        self.finish_dt = None
+        self.handle_time = None
 
     def finish(self):
         self.finish_dt = datetime.datetime.utcnow()
         self.handle_time = (self.finish_dt - self.create_dt).total_seconds()
+
+    def get_info(self):
+        return (self.jid, self.body)
 
     def __repr__(self):
         return "<WorkTask('{body}', '{jid}', '{task_type}', '{create_dt}', '{finish_dt}', '{handle_time}')>".format(self.__dict__)
@@ -73,7 +79,7 @@ class Category(Base):
         self.is_active = False
 
     def __repr__(self):
-        return "<Category('{name}', '{is_active}', '{add_dt}')>".format(self.__dict__)
+        return "<Category('{name:s}', '{is_active:b}', '{add_dt:s}')>".format(**self.__dict__)
 
 
 class Chat(Base):
@@ -84,6 +90,19 @@ class Chat(Base):
 class ChatMessage(Base):
     __tablename__ = 'chat_messages'
     id = Column(Integer, primary_key=True)
+
+
+class CallStat(Base):
+    __tablename__ = 'call_stats'
+    id = Column(Integer, primary_key=True)
+    user = Column(String)
+    resource = Column(String)
+    dt = Column(DateTime)
+
+    def __init__(self, user, resource):
+        self.user = user
+        self.resource = resource
+        self.dt = datetime.datetime.utcnow()
 
  
 class Question(Base):
@@ -115,3 +134,11 @@ def unregister_models(engine):
     logging.debug('Drop all models')
     for model in _models:
         model.metadata.drop_all(engine)
+
+def create_categories(session):
+    logging.debug('Create categories')
+    with open('utils/categories.txt') as cat_file:
+        for row in cat_file:
+            category = Category(unicode(row.strip()))
+            session.add(category)
+    session.commit()

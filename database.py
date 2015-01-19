@@ -7,13 +7,16 @@ from sqlalchemy.orm import sessionmaker
 class DatabaseManager(object):
     def __init__(self):
         #self.engine = sqlalchemy.create_engine('sqlite:///:memory:')    
-        self.engine = sqlalchemy.create_engine('sqlite:///temp.db')
+        self.engine = sqlalchemy.create_engine('sqlite:///temp.db', echo=False)
         self.connection = self.engine.connect()
         self.session_maker = sessionmaker(bind=self.engine)
         self.create_all()
         
     def create_all(self):
         models.register_models(self.engine)
+
+    def add_categories(self):
+        models.create_categories(self.session_maker())
        
     def drop_all(self):
         models.unregister_models(self.engine)

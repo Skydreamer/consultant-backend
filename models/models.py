@@ -2,10 +2,22 @@ import datetime
 import logging
 from sqlalchemy import Column, Integer, String, DateTime, Boolean
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.schema import ForeignKey
 
+# make it as sep class
 Base = declarative_base()
 
-class WorkTask(Base):
+class DeclarativeBase():
+    def __init__(self):
+        pass
+
+    def __repr__(self):
+        printed = {k: v for k, v in self.__dict__.iteritems() if k in self.__class__.__dict__}
+        print printed
+        #return "<WorkTask('{body:s}', '{jid:s}', '{task_type:s}', '{create_dt:s}', '{finish_dt:s}', '{handle_time:f}')>".format(self.__dict__)
+
+
+class WorkTask(Base, DeclarativeBase):
     __tablename__ = 'work_tasks'
     id = Column(Integer, primary_key=True)
     body = Column(String)
@@ -27,11 +39,8 @@ class WorkTask(Base):
         self.finish_dt = datetime.datetime.utcnow()
         self.handle_time = (self.finish_dt - self.create_dt).total_seconds()
 
-    def __repr__(self):
-        return "<WorkTask('{body:s}', '{jid:s}', '{task_type:s}', '{create_dt:s}', '{finish_dt:s}', '{handle_time:f}')>".format(self.__dict__)
 
-
-class SendTask(Base):
+class SendTask(Base, DeclarativeBase):
     __tablename__ = 'send_tasks'
     id = Column(Integer, primary_key=True)
     body = Column(String)
@@ -56,23 +65,34 @@ class SendTask(Base):
     def get_info(self):
         return (self.jid, self.body)
 
-    def __repr__(self):
-        return "<WorkTask('{body:s}', '{jid:s}', '{task_type:s}', '{create_dt:s}', '{finish_dt:s}', '{handle_time:i}')>".format(self.__dict__)
- 
 
-
-
-class Chat(Base):
+class Chat(Base, DeclarativeBase):
     __tablename__ = 'chats'
     id = Column(Integer, primary_key=True)
+    question_id = Column(Integer, ForeignKey('questions.id'))
+    consultant_id = Column(Integer, ForeignKey('consultants.id'))
+    create_dt = Column(DateTime)
+
+    def __init__(self, question_id, consultant_id):
+        self.question_id = question_id
+        self.consultant_id = consultant_id
+        self.create_dt = datetime.datetime.utcnow()
 
 
-class ChatMessage(Base):
+class ChatMessage(Base, DeclarativeBase):
     __tablename__ = 'chat_messages'
     id = Column(Integer, primary_key=True)
+    chat_id = Column(Integer, ForeignKey('chats.id'))
+    message = Column(String)
+    create_dt = Column(DateTime)
+    
+    def __init__(self, chat_id, message):
+        self.chat_id = chat_id
+        self.message = message
+        self.create_dt = datetime.datetime.utcnow()
 
 
-class CallStat(Base):
+class CallStat(Base, DeclarativeBase):
     __tablename__ = 'call_stats'
     id = Column(Integer, primary_key=True)
     user = Column(String)
@@ -84,7 +104,8 @@ class CallStat(Base):
         self.resource = resource
         self.call_dt = datetime.datetime.utcnow()
 
-class Category(Base):
+
+class Category(Base, DeclarativeBase):
     __tablename__ = 'categories'
     id = Column(Integer, primary_key=True)
     name = Column(String)
@@ -99,10 +120,8 @@ class Category(Base):
     def disable(self):
         self.is_active = False
 
-        def __repr__(self):
-        return "<Category('{name:s}', '{is_active:b}', '{add_dt:s}')>".format(**self.__dict__)
 
-class Consultant(Base):
+class Consultant(Base, DeclarativeBase):
     __tablename__ = 'consultants'
     id = Column(Integer, primary_key=True)
     name = Column(String)
@@ -111,34 +130,39 @@ class Consultant(Base):
         self.name = name
 
 
-class ConsultantCategory(Base):
-    __table__ = 'consultant_categories'
-    id = Column(Integer, primary_key=True)
-    consultant_id = Column(Integer, ForeignKey('consultants.id'))
-    category_id = Column(Integer, ForeignKey('categories.id'))
+#class ConsultantCategory(Base, DeclarativeBase):
+#    __table__ = 'consultant_categories'
+#    id = Column(Integer, primary_key=True)
+#    consultant_id = Column(Integer, ForeignKey('consultants.id'))
+#    category_id = Column(Integer, ForeignKey('categories.id'))
+#
+#    def __init__(self, cons_id, cat_id):
+#        self.consultant_id = cons_id
+#        self.category_id = cat_id
+#        
+#    def __repr__(self):
+#        return "<Category('{name:s}', '{is_active:b}', '{add_dt:s}')>".format(**self.__dict__)
 
-    def __init__(self, cons_id, cat_id):
-        self.consultant_id = cons_id
-        self.category_id = cat_id
-        
 
-class Question(Base):
+class Question(Base, DeclarativeBase):
     __tablename__ = 'questions'
     id = Column(Integer, primary_key=True)
     message = Column(String)
     from_jid = Column(String)
     category_id = Column(Integer) #foreign key
     create_dt = Column(DateTime)
+    is_active = Column(Boolean)
  
-    def __init__(self, message, from_jid, category):
+    def __init__(self, message, from_jid, category_id):
         self.message = message
         self.from_jid = from_jid
-        self.category = category
+        self.category_id = category_id
         self.create_dt = datetime.datetime.utcnow()
+        self.is_active = True
+    
+    def close(self):
+        pass
 
-    def __repr__(self):
-        return "<Question('{message:s}', '{from_jid:s}', '{category_id:i}', '{create_dt:s}')>".format(self.__dict__)
- 
 
 _models = [WorkTask, SendTask, Question, Category, Chat, ChatMessage]
 

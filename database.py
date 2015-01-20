@@ -3,6 +3,16 @@ import sqlalchemy
 import models
 from sqlalchemy.orm import sessionmaker
 
+READ_OPERATIONS = [
+    'get_messages',
+    'get_consultants',
+    'get_categories'
+]
+
+WRITE_OPERATIONS = [
+    'ask_question',
+    'send_chat_message'
+]
 
 class DatabaseManager(object):
     def __init__(self):
@@ -28,3 +38,9 @@ class DatabaseManager(object):
 class CallStatController(object):
     def __init__(self):
         pass
+
+    def __enter__(self):
+        logging.debug('Enter into CallStatManager')
+
+    def __exit__(self):
+        logging.debug('Exit from CallStatManager')

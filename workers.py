@@ -11,6 +11,7 @@ import models
 import database
 
 from multiprocessing.queues import Empty
+from utils.misc import main_logger, task_logger
 
 
 class BasicWorker(multiprocessing.Process, object):
@@ -35,22 +36,24 @@ class TaskHandler(BasicWorker):
         self.send_queue = send_message_queue
 
     def stop(self):
-        logging.debug('Turn off')
+        main_logger.debug('Turn off')
         self.work = False
 
     def run(self):
-        logging.info('Process %s is ready to work' % self.name)
+        task_logger.info('Process %s is ready to work' % self.name)
+        main_logger.info('Process %s is ready to work' % self.name)
         get_timeout = utils.config.QUEUE_GET_TIMEOUT
         while self.work:
             try:
-                logging.debug('%s is trying to get a task...' % self.name)
+                task_logger.info('%s is trying to get a task...' % self.name)
                 task = self.task_queue.get(block=True, timeout=get_timeout)
-                logging.info('%s got task [%s]' % (self.name,
+                task_logger.info('%s got task [%s]' % (self.name,
                                                    str(task)))
                 self.handle_task(task)
             except Empty:
-                logging.debug('%s timeouted...' % self.name)
-        logging.info('Process %s is ending...' % self.name)
+                task_logger.info('%s timeouted...' % self.name)
+        task_logger.info('Process %s is ending...' % self.name)
+        main_logger.info('Process %s is ready to work' % self.name)
 
     def handle_task(self, work_task):
         message = work_task.body
@@ -79,7 +82,7 @@ class TaskHandler(BasicWorker):
 
         work_task.finish()
         self.session.commit()
-        logging.info('Handle task [%f] seconds...' % work_task.handle_time)
+        main_logger.info('Handle task [%f] seconds...' % work_task.handle_time)
 
 
 class ServerBotWorker(BasicWorker):
@@ -97,13 +100,13 @@ class ServerBotWorker(BasicWorker):
 
     def xmpp_connect(self):
         if self.work_bot.connect(self.conn_params, use_tls=False):
-            logging.info('%s succesfully connected to server' % self.work_bot.name)
+            main_logger.info('%s succesfully connected to server' % self.work_bot.name)
         else:
-            logging.error('%s failed connection to server' % self.work_bot.name)
+            main_logger.error('%s failed connection to server' % self.work_bot.name)
             assert False
 
     def xmpp_disconnect(self):
-        logging.info('%s trying to disconnect from server...' % self.work_bot.name)
+        main_logger.info('%s trying to disconnect from server...' % self.work_bot.name)
         self.work_bot.disconnect_from_server()
 
     def stop(self):
@@ -111,7 +114,7 @@ class ServerBotWorker(BasicWorker):
         self.xmpp_disconnect()
 
     def init_worker(self):
-        logging.info('Init xmpp worker')
+        main_logger.info('Init xmpp worker')
         self.work_bot = xmpp_bots.ServerXMPPBot(self.jid, self.passwd,
                                                 self.task_queue)
         self.work_bot.register_plugin('xep_0030') # Service Discovery
@@ -123,16 +126,18 @@ class ServerBotWorker(BasicWorker):
 
     def run(self):
         self.init_worker()
-        logging.info('Process %s is ready to work' % self.name)
+        main_logger.info('Process %s is ready to work' % self.name)
+        task_logger.info('Process %s is ready to work' % self.name)
         while self.work:
             try:
-                logging.debug('%s is trying to get a task...' % self.name)
+                task_logger.debug('%s is trying to get a task...' % self.name)
                 send_task = self.send_queue.get(block=True, timeout=utils.config.QUEUE_GET_TIMEOUT)
-                logging.info('%s got send task [%s, %s]' % (self.name, send_task.jid, send_task.body))
+                task_logger.info('%s got send task [%s, %s]' % (self.name, send_task.jid, send_task.body))
                 self.work_bot.send_msg(send_task.jid, send_task.body)
                 send_task.finish()
             except Empty:
-                logging.debug('%s timeouted...' % self.name)
-        logging.info('Process %s is ending...' % self.name)
+                task_logger.debug('%s timeouted...' % self.name)
+        task_logger.info('Process %s is ending...' % self.name)
+        main_logger.info('Process %s is ending...' % self.name)
 
 

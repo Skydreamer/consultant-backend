@@ -8,6 +8,7 @@ import database
 
 from controllers import QueueController, PoolController
 from utils.statistics import Statistics
+from utils.misc import main_logger
 
 
 class ServerComponent(object):
@@ -22,7 +23,7 @@ class ServerComponent(object):
         self.is_started = False
 
     def start(self):
-        logging.info('Starting server...')
+        main_logger.info('Starting server...')
         self.db_controller.add_categories()
         self.queue_controller = QueueController()
         self.pool_controller = PoolController(
@@ -30,13 +31,13 @@ class ServerComponent(object):
                             self.queue_controller.send_message_queue)
         self.pool_controller.start()
         self.is_started = True
-        logging.info('Server succesfully started!')
+        main_logger.info('Server succesfully started!')
 
     def stop(self):
-        logging.info('Stopping server...')
+        main_logger.info('Stopping server...')
         self.pool_controller.stop()
         self.is_started = False
-        logging.info('Server succesfully stopped!')
+        main_logger.info('Server succesfully stopped!')
 
     def run(self):
         try:
@@ -50,14 +51,14 @@ class ServerComponent(object):
                     print self.queue_controller.get_state()
                     print self.statistics.avg_time()
                 elif message.startswith('restart'):
-                    logging.info('Restarting ServerComponent...')
+                    main_logger.info('Restarting ServerComponent...')
                     self.stop()
                     self.start()
-                    logging.info('Server succesfully restarted!')
+                    main_logger.info('Server succesfully restarted!')
                 else:
-                    logging.info('Wrong command')
+                    main_logger.info('Wrong command')
         except KeyboardInterrupt:
-            logging.info('Got KeyboardInterrupt... stopping server...')
+            main_logger.info('Got KeyboardInterrupt... stopping server...')
             self.stop()
 
 
@@ -77,8 +78,7 @@ def parse_args():
     opts, args = opt.parse_args()
 
     log_format = '%(asctime)s  [P%(process)s] %(levelname)-8s : %(module)s - %(message)s'
-    logging.basicConfig(level=opts.loglevel, format=log_format)
-    logging.info('Got args: %s' % str(opts))
+    main_logger.info('Got args: %s' % str(opts))
     return (opts, args)
 
 
